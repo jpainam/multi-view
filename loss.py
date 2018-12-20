@@ -11,7 +11,7 @@ class MultiViewSimilarityLoss(nn.Module):
 
     def forward(self, embeddings, negative):
         similarity_loss = []
-        for i in range(0, len(embeddings) - 1):
+        for i in range(0, len(embeddings)):
             cur_embed = embeddings[i]
             for j in range(i + 1, len(embeddings)):
                 # print(embeddings[j].shape, cur_embed.shape, negative.shape)
@@ -21,6 +21,6 @@ class MultiViewSimilarityLoss(nn.Module):
                 sim_loss = self.triplet_loss(cur_embed, embeddings[j], negative)
                 similarity_loss.append(sim_loss)
         if 0 != len(similarity_loss):
-            retval = torch.mean(torch.from_numpy(similarity_loss))
-            return retval
-        return 0
+            sim_loss = torch.mean(torch.stack(similarity_loss))
+            return sim_loss
+        return self.triplet_loss(embeddings[0], embeddings[0], negative)

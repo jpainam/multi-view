@@ -11,7 +11,8 @@ from torchvision import datasets, models, transforms
 import time
 import os
 import scipy.io
-from base_model import  *
+from base_model import *
+from model import Model
 
 ######################################################################
 # Options
@@ -20,7 +21,7 @@ from base_model import  *
 parser = argparse.ArgumentParser(description='Training')
 parser.add_argument('--model_path', default='model_best', type=str, help='Model path')
 parser.add_argument('--test_dir', default='/home/paul/datasets/market1501/pytorch', type=str, help='./test_data')
-parser.add_argument('--batchsize', default=2, type=int, help='batchsize')
+parser.add_argument('--batchsize', default=1, type=int, help='batchsize')
 parser.add_argument('--multi', action='store_true', help='use multiple query')
 parser.add_argument('--use_dense', action='store_true', help='use dense architecture')
 
@@ -48,8 +49,8 @@ use_gpu = torch.cuda.is_available()
 #---- Single GPU training --
 def load_network(network):
     checkpoint = torch.load('./checkpoint/resnet50_checkpoint.pth')
-    best_acc = checkpoint['best_acc']
-    start_epoch = checkpoint['epoch']
+    # best_acc = checkpoint['best_acc']
+    # start_epoch = checkpoint['epoch']
     network.load_state_dict(checkpoint['state_dict'])
     # optimizer.load_state_dict(checkpoint['optimizer'])
     return network
@@ -118,17 +119,17 @@ def get_id(img_path):
 if __name__ == '__main__':
     gallery_path = image_datasets['gallery'].imgs
     query_path = image_datasets['query'].imgs
-    #mquery_path = image_datasets['multi-query'].imgs
+    # mquery_path = image_datasets['multi-query'].imgs
 
     gallery_cam, gallery_label = get_id(gallery_path)
     query_cam, query_label = get_id(query_path)
-    #mquery_cam, mquery_label = get_id(mquery_path)
+    # mquery_cam, mquery_label = get_id(mquery_path)
 
     ######################################################################
     # Load Collected data Trained model
     print('-------test-----------')
 
-    model_structure = resnet50(num_classes=num_class)
+    model_structure = Model(num_classes=num_class)
 
     model = load_network(model_structure)
 

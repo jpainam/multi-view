@@ -74,7 +74,13 @@ lr = args.lr
 n_epochs = args.epochs
 criterion = nn.CrossEntropyLoss()
 similarity_criterion = MultiViewSimilarityLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+optimizer = torch.optim.SGD([
+    {'params': model.base.parameters(), 'lr': 0.01},
+    {'params': model.classifier.parameters(), 'lr': 0.1}
+], weight_decay=5e-4, momentum=0.9, nesterov=True)
+
+# Decay LR by a factor of 0.1 every 40 epochs
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.1)
 
 best_acc = 0.0
 best_loss = 0.0
@@ -115,6 +121,7 @@ def train():
 
         loss = criterion(outputs, targets)
         sim_loss = similarity_criterion(embbedings, negative)
+
         loss = loss + 0.01*sim_loss
         # compute gradient and do SGD step
         optimizer.zero_grad()
@@ -175,13 +182,13 @@ if __name__ == '__main__':
         start = time.time()
 
         model.train()
+        scheduler.step()
         train()
         print('Time taken: %.2f sec.' % (time.time() - start))
 
         util.save_checkpoint({
             'epoch': epoch + 1,
             'state_dict': model.state_dict(),
-            'best_acc': best_acc,
             'optimizer': optimizer.state_dict(),
         }, 'resnet', args.depth)
 
