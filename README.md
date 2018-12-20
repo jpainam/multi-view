@@ -52,8 +52,7 @@ python evaluate.py (run on CPU)
                Qin Ke and
                Guisong Liu and
                Guangchun Luo},
-  title     = {SVDNet for Pedestrian Retrieval},
-  booktitle   = {ICCV},
-  year      = {2017},
+  title     = {Jointly Learning View-Specific Representation and Similarity Metric  for Robust Person Re-Identification},
+  year      = {2018},
 }
 ```
