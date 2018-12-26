@@ -46,13 +46,3 @@ python evaluate.py (run on CPU)
 | CUHK03 |          |       |        |        |     |
 
 ### How to  cite
-```bash
-@article{DBLP:journals/corr/Ainam2018,
-  author    = {Jean-Paul Ainam and
-               Qin Ke and
-               Guisong Liu and
-               Guangchun Luo},
-  title     = {Jointly Learning View-Specific Representation and Similarity Metric  for Robust Person Re-Identification},
-  year      = {2018},
-}
-```

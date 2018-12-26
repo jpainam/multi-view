@@ -1,3 +1,5 @@
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
@@ -10,21 +12,20 @@ from model import Model
 import argparse
 import numpy as np
 import time
-import os
 
-from base_model import *
 
-from logger import Logger
+# from logger import Logger
 import util
 from MultiViewDataLoader import MultiViewDataSet
 
 
 parser = argparse.ArgumentParser(description='MV-CNN4ReID')
-parser.add_argument('--data', metavar='DIR', help='path to dataset', default='/home/paul/datasets/market1501/multiviews')
-parser.add_argument('--depth', choices=[18, 34, 50, 101, 152], type=int, metavar='N', default=50, help='resnet depth (default: resnet50)')
-parser.add_argument('--epochs', default=100, type=int, metavar='N', help='number of total epochs to run (default: 100)')
-parser.add_argument('-b', '--batch-size', default=2, type=int,
+parser.add_argument('--data', metavar='DIR', help='path to dataset', default='/home/fstu1/datasets/market1501/multiviews')
+
+parser.add_argument('--epochs', default=150, type=int, metavar='N', help='number of total epochs to run (default: 100)')
+parser.add_argument('-b', '--batch_size', default=4, type=int,
                     metavar='N', help='mini-batch size (default: 4)')
+parser.add_argument('--gpu', default=1, type=int)
 parser.add_argument('--lr', '--learning-rate', default=0.0001, type=float,
                     metavar='LR', help='initial learning rate (default: 0.0001)')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
@@ -35,8 +36,7 @@ parser.add_argument('--lr-decay', default=0.1, type=float,
                     metavar='W', help='learning rate decay (default: 0.1)')
 parser.add_argument('--print-freq', '-p', default=10, type=int,
                     metavar='N', help='print frequency (default: 10)')
-parser.add_argument('-r', '--resume', default='', type=str, metavar='PATH',
-                    help='path to latest checkpoint (default: none)')
+parser.add_argument('--resume', dest='resume', action='store_true', help='use checkpoint ')
 parser.add_argument('--pretrained', dest='pretrained', action='store_true', help='use pre-trained model')
 
 args = parser.parse_args()
@@ -51,23 +51,23 @@ transform = transforms.Compose([
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:{}".format(torch.cuda.current_device()))
 
 # Load dataset
 dset_train = MultiViewDataSet(args.data, transform=transform)
-train_loader = DataLoader(dset_train, batch_size=args.batch_size, shuffle=True, num_workers=2)
+train_loader = DataLoader(dset_train, batch_size=args.batch_size, shuffle=True, num_workers=8)
 
 classes = dset_train.classes
 # print(len(classes))
 
-model = Model(num_classes=len(classes))
+model = Model(num_classes=len(classes), training=True)
 
 model.to(device)
 cudnn.benchmark = True
 
 print('Running on ' + str(device))
 
-logger = Logger('logs')
+# logger = Logger('logs')
 
 # Loss and Optimizer
 lr = args.lr
@@ -75,8 +75,8 @@ n_epochs = args.epochs
 criterion = nn.CrossEntropyLoss()
 similarity_criterion = MultiViewSimilarityLoss()
 optimizer = torch.optim.SGD([
-    {'params': model.base.parameters(), 'lr': 0.01},
-    {'params': model.classifier.parameters(), 'lr': 0.1}
+    {'params': model.base.parameters(), 'lr': 0.001},
+    {'params': model.classifier.parameters(), 'lr': 0.01}
 ], weight_decay=5e-4, momentum=0.9, nesterov=True)
 
 # Decay LR by a factor of 0.1 every 40 epochs
@@ -92,10 +92,10 @@ def load_checkpoint():
     global best_acc, start_epoch
     # Load checkpoint.
     print('\n==> Loading checkpoint..')
-    assert os.path.isfile(args.resume), 'Error: no checkpoint file found!'
-
-    checkpoint = torch.load(args.resume)
-    best_acc = checkpoint['best_acc']
+    #assert os.path.isfile(args.resume), 'Error: no checkpoint file found!'
+    checkpoint_path = './checkpoint/mvcnn_checkpoint.pth'
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+    #best_acc = checkpoint['best_acc']
     start_epoch = checkpoint['epoch']
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
@@ -117,12 +117,12 @@ def train():
         inputs, targets, negs = Variable(inputs), Variable(targets), Variable(negs)
 
         # compute output
-        outputs, embbedings, negative = model(inputs, negs)
+        outputs = model(inputs, negs)
 
         loss = criterion(outputs, targets)
-        sim_loss = similarity_criterion(embbedings, negative)
+        #sim_loss = similarity_criterion(embbedings, negative)
 
-        loss = loss + 0.01*sim_loss
+        #loss = loss + 0.1*sim_loss
         # compute gradient and do SGD step
         optimizer.zero_grad()
         loss.backward()
@@ -190,10 +190,10 @@ if __name__ == '__main__':
             'epoch': epoch + 1,
             'state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict(),
-        }, 'resnet', args.depth)
+        }, 'mvcnn')
 
         # Decaying Learning Rate
-        if (epoch + 1) % args.lr_decay_freq == 0:
-            lr *= args.lr_decay
-            optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-            print('Learning rate:', lr)
+        #if (epoch + 1) % args.lr_decay_freq == 0:
+        #    lr *= args.lr_decay
+        #    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+        #    print('Learning rate:', lr)

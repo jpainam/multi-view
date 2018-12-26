@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, division
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
 import argparse
 import torch
@@ -11,6 +12,7 @@ from torchvision import datasets, models, transforms
 import time
 import os
 import scipy.io
+import torch.backends.cudnn as cudnn
 from base_model import *
 from model import Model
 
@@ -18,12 +20,11 @@ from model import Model
 # Options
 # python test.py --model_path market/model_39.pth
 # --------
-parser = argparse.ArgumentParser(description='Training')
-parser.add_argument('--model_path', default='model_best', type=str, help='Model path')
-parser.add_argument('--test_dir', default='/home/paul/datasets/market1501/pytorch', type=str, help='./test_data')
-parser.add_argument('--batchsize', default=1, type=int, help='batchsize')
+parser = argparse.ArgumentParser(description='Testing')
+parser.add_argument('--test_dir', default='/home/fstu1/datasets/market1501/pytorch', type=str, help='./test_data')
+parser.add_argument('--batchsize', default=32, type=int, help='batchsize')
 parser.add_argument('--multi', action='store_true', help='use multiple query')
-parser.add_argument('--use_dense', action='store_true', help='use dense architecture')
+
 
 opt = parser.parse_args()
 
@@ -45,29 +46,25 @@ dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=opt.
 
 class_names = image_datasets['query'].classes
 use_gpu = torch.cuda.is_available()
+device = torch.device("cuda:{}".format(torch.cuda.current_device()))
 
-#---- Single GPU training --
-def load_network(network):
-    checkpoint = torch.load('./checkpoint/resnet50_checkpoint.pth')
+model = Model(num_classes=num_class, training=True)
+
+model.to(device)
+cudnn.benchmark = True
+# ---- Single GPU training --
+
+def load_network():
+    global best_acc, start_epoch
+    # Load checkpoint.
+    print('\n==> Loading checkpoint..')
+    checkpoint_path = './checkpoint/mvcnn_checkpoint.pth'
+    checkpoint = torch.load(checkpoint_path, map_location=device)
     # best_acc = checkpoint['best_acc']
-    # start_epoch = checkpoint['epoch']
-    network.load_state_dict(checkpoint['state_dict'])
-    # optimizer.load_state_dict(checkpoint['optimizer'])
-    return network
+    start_epoch = checkpoint['epoch']
+    model.load_state_dict(checkpoint['state_dict'])
+    #optimizer.load_state_dict(checkpoint['optimizer'])
 
-#-----multi-gpu training---------
-def load_network1(network):
-    save_path = os.path.join('./model', opt.model_path)
-    state_dict = torch.load(save_path)
-    # create new OrderedDict that does not contain `module.`
-    from collections import OrderedDict
-    new_state_dict = OrderedDict()
-    for k, v in state_dict.items():
-        namekey = k[7:] # remove `module.`
-        new_state_dict[namekey] = v
-    # load params
-    network.load_state_dict(new_state_dict)
-    return network
 
 def fliplr(img):
     '''flip horizontal'''
@@ -128,10 +125,7 @@ if __name__ == '__main__':
     ######################################################################
     # Load Collected data Trained model
     print('-------test-----------')
-
-    model_structure = Model(num_classes=num_class)
-
-    model = load_network(model_structure)
+    load_network()
 
     # Remove the final fc layer and classifier layer
 

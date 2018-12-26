@@ -2,7 +2,7 @@ import glob
 import os
 import shutil
 
-root = '/home/paul/datasets/market1501/bounding_box_train'
+root = '/home/paul/datasets/market1501'
 '''
 imglist = glob.glob(os.path.join(root, '*.jpg'))
 for imgpath in imglist:
@@ -32,7 +32,7 @@ for classes in os.listdir(new_path):
                 os.makedirs(dst)
             shutil.move(img, os.path.join(dst, img_name))
             v = v + 1
-'''
+
 print('Removing empty directory')
 new_path = '/home/paul/datasets/market1501/multiviews'
 
@@ -49,5 +49,23 @@ def removeEmptyFolders(path, removeRoot=True):
     if len(files) == 0 and removeRoot:
         os.rmdir(path)
 
-
 removeEmptyFolders(new_path)
+'''
+#multi-query
+query_path = os.path.join(root, 'gt_bbox')
+# for dukemtmc-reid, we do not need multi-query
+if os.path.isdir(query_path):
+    query_save_path = os.path.join(root, 'pytorch', 'multi-query')
+    if not os.path.isdir(query_save_path):
+        os.mkdir(query_save_path)
+
+    for root, dirs, files in os.walk(query_path, topdown=True):
+        for name in files:
+            if not name[-3:] == 'jpg':
+                continue
+            ID = name.split('_')
+            src_path = query_path + '/' + name
+            dst_path = query_save_path + '/' + ID[0]
+            if not os.path.isdir(dst_path):
+                os.mkdir(dst_path)
+            shutil.copyfile(src_path, dst_path + '/' + name)

@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.init as init
 import torch.nn.functional as F
+from torchvision.utils import save_image
 from base_model import *
 
 
@@ -75,18 +76,22 @@ class Model(nn.Module):
             return v
         else:
             xx = xx.transpose(0, 1)
+            print(xx.size())
             combined_views = []
             for v in xx:
                 v = self.base(v)
                 v = self.avgpool(v)
                 v = v.view(v.size(0), -1)
                 combined_views.append(v)
-
-            pooled_view = combined_views[0]
-            for i in range(1, len(combined_views)):
-                pooled_view = torch.max(pooled_view, combined_views[i])
+            print(len(combined_views))
+            print(torch.stack(combined_views))
+            exit(0)
+            pooled_view = torch.max(torch.stack(combined_views))
+            #pooled_view = combined_views[0]
+            #for i in range(1, len(combined_views)):
+            #    pooled_view = torch.max(pooled_view, combined_views[i])
             pooled_view = self.classifier(pooled_view)
-            neg = self.base(neg)
-            neg = self.avgpool(neg)
-            neg = neg.view(neg.size(0), -1)
-            return pooled_view, combined_views, neg
+            #neg = self.base(neg)
+            #neg = self.avgpool(neg)
+            #neg = neg.view(neg.size(0), -1)
+            return pooled_view
