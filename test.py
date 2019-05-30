@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, division
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import argparse
 import torch
@@ -32,7 +32,7 @@ test_dir = opt.test_dir
 #torch.cuda.set_device(int(os.environ["CUDA_VISIBLE_DEVICES"]))
 num_class = 751
 data_transforms = transforms.Compose([
-    transforms.Resize((224, 224), interpolation=3),
+    transforms.Resize((256, 128), interpolation=3),
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
@@ -58,7 +58,7 @@ def load_network():
     global best_acc, start_epoch
     # Load checkpoint.
     print('\n==> Loading checkpoint..')
-    checkpoint_path = './checkpoint/mvcnn_checkpoint.pth'
+    checkpoint_path = './checkpoint/triplet_checkpoint.pth'
     checkpoint = torch.load(checkpoint_path, map_location=device)
     # best_acc = checkpoint['best_acc']
     start_epoch = checkpoint['epoch']

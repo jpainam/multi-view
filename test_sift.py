@@ -12,13 +12,13 @@ kp = sift.detect(cv_img,None)
 img = cv2.drawKeypoints(cv_img,kp,img)
 cv2.imwrite('sift_keypoints.jpg',img)
 kp, des = sift.detectAndCompute(cv_img,None)
-print(kp)
+des = des[:80, :]
 print(des.shape)
-print(des)
 
 first_column = pd.Series(['row_{}'.format(row) for row in range(des.shape[0])])
 des = pd.DataFrame(des)
 des = pd.concat([first_column, des], axis=1)
+
 des.to_csv('csv_data.csv', header=False, index=False)
 
 # N keypoint
@@ -28,10 +28,15 @@ des.to_csv('csv_data.csv', header=False, index=False)
 # writer.writerows(des)
 # LSH Algorithm
 n_bucket = 100
-lsh = LocalitySensitiveHashing(datafile="csv_data.csv", dim=des.shape[-1] - 1,
-                               r=des.shape[0], b=n_bucket)
+lsh = LocalitySensitiveHashing(datafile="data_for_lsh.csv",
+                               dim=10,
+                               r=50,
+                               b=n_bucket)
+
 lsh.get_data_from_csv()
+lsh.show_data_for_lsh()
 lsh.initialize_hash_store()
 lsh.hash_all_data()
+exit(0)
 similarity_neighborhoods = lsh.lsh_basic_for_nearest_neighbors()
 print(similarity_neighborhoods)

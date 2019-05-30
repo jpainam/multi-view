@@ -29,31 +29,64 @@ class MultiViewDataSet(Dataset):
 
         # root / <label>  / <train/test> / <item> / <view>.png
         for label in os.listdir(root): # Label
-            for item in os.listdir(root + '/' + label):
+            imgs = []
+            for view in os.listdir(root + '/' + label):
                 views = []
-                for view in os.listdir(root + '/' + label + '/' + item):
-                    views.append(root + '/' + label + '/' + item + '/' + view)
-
-                self.x.append(views)
-                self.y.append(self.class_to_idx[label])
+                for im in os.listdir(root + '/' + label + '/' + view):
+                    views.append(root + '/' + label + '/' + view + '/' + im)
+                imgs.append(views)
+            self.x.append(imgs)
+            self.y.append(int(label))
+        assert len(self.y) == len(self.classes)
+        assert len(self.x) == len(self.y)
 
     # Override to give PyTorch access to any image on the dataset
     def __getitem__(self, index):
         orginal_views = self.x[index]
-        views = []
-        neg_idx = np.random.choice([i for i in self.y if i != self.y[index]])
-        neg_view = np.random.choice(self.x[neg_idx])
+        img_pos_views = []
+        neg_idx = np.random.choice([i for i in range(len(self.y)) if i != index])
+        neg_orig = neg_idx
+        neg_images = self.x[neg_idx]
+        #if type(neg_images) == list:
+        neg_idx = np.random.choice([i for i in range(len(neg_images))])
+        neg_views = neg_images[neg_idx]
+        #    if type(neg_views) == list:
+        #        neg_idx = np.random.choice([i for i in range(len(neg_views))])
+
+        #else:
+        #    neg_views = self.x[neg_idx]
+
+        neg_view = np.random.choice(neg_views)
+        #print(neg_view)
+        #print(orginal_views)
+        #print(neg_views)
+        #print(len(neg_views))
+        #print(orginal_views)
+        #print(len(orginal_views))
+        #for view in neg_views:
+        #   im = Image.open(view)
+        #    im = im.convert('RGB')
+        #    if self.transform is not None:
+        #        im = self.transform(im)
+        #    img_neg_views.append(im)
+
 
         for view in orginal_views:
-            im = Image.open(view)
-            im = im.convert('RGB')
-            if self.transform is not None:
-                im = self.transform(im)
-            views.append(im)
+            #imgs = []
+            for im in view:
+                im = Image.open(im)
+                im = im.convert('RGB')
+                if self.transform is not None:
+                    im = self.transform(im)
+                #imgs.append(im)
+                img_pos_views.append(im)
+
         im_neg = self.transform(Image.open(neg_view).convert('RGB'))
 
-        assert self.y[index] != neg_idx
-        return views, self.y[index], im_neg, neg_idx
+        assert index != neg_orig
+        # also return the neg_idx though useless
+        #assert self.y[index] >= 0 and self.y[index] < n
+        return img_pos_views, int(self.y[index]), im_neg, neg_idx
 
     # Override to give PyTorch size of dataset
     def __len__(self):
