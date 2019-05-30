@@ -48,9 +48,10 @@ class_names = image_datasets['query'].classes
 use_gpu = torch.cuda.is_available()
 device = torch.device("cuda:{}".format(torch.cuda.current_device()))
 
-model = Model(num_classes=num_class, training=True)
+model = Model(class_num=num_class, stride=2)
 
-model.to(device)
+model = model.cuda()
+model = nn.DataParallel(model)
 cudnn.benchmark = True
 # ---- Single GPU training --
 
@@ -58,8 +59,8 @@ def load_network():
     global best_acc, start_epoch
     # Load checkpoint.
     print('\n==> Loading checkpoint..')
-    checkpoint_path = './checkpoint/triplet_checkpoint.pth'
-    checkpoint = torch.load(checkpoint_path, map_location=device)
+    checkpoint_path = './checkpoint/mvcnn_checkpoint.pth'
+    checkpoint = torch.load(checkpoint_path)
     # best_acc = checkpoint['best_acc']
     start_epoch = checkpoint['epoch']
     model.load_state_dict(checkpoint['state_dict'])
@@ -129,14 +130,13 @@ if __name__ == '__main__':
 
     # Remove the final fc layer and classifier layer
 
-    #model.fc = nn.Sequential()
-    model.classifier = nn.Sequential()
+    model.module.model.fc = nn.Sequential()
+    model.module.classifier = nn.Sequential()
 
 
     # Change to test mode
     model = model.eval()
-    if use_gpu:
-        model = model.cuda()
+
 
     # Extract feature
     gallery_feature = extract_feature(model, dataloaders['gallery'])
