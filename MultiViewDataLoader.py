@@ -36,7 +36,7 @@ class MultiViewDataSet(Dataset):
                     views.append(root + '/' + label + '/' + view + '/' + im)
                 imgs.append(views)
             self.x.append(imgs)
-            self.y.append(int(label))
+            self.y.append(self.class_to_idx[label])
         assert len(self.y) == len(self.classes)
         assert len(self.x) == len(self.y)
 

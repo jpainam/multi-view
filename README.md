@@ -7,6 +7,20 @@
 - Numpy
 - Pytorch 0.3+
 
+## Data preparation
+First, run `python prepare.py` to prepare the dataset. Preparation creates views in each identity. The output 
+folder should likes
+```python
+0743--
+      |--view_0
+      |--view_1
+      |--view_3--
+                |--1479_c3s3_080744_06.jpg
+                |--1479_c3s3_080694_04
+
+```
+
+
 ## Training
 To train the network, use the command 
 
